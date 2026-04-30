@@ -1,0 +1,42 @@
+{
+  "name": "vite-react-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint:css": "stylelint \"src/**/*.css\" --fix --quiet",
+    "lint:js": "eslint . --ext ts,tsx --report-unused-disable-directives",
+    "lint:types": "tsc --noEmit",
+    "check:css-vars": "node scripts/check-css-variables.js",
+    "check:css-classes": "node scripts/check-css-classes.js",
+    "lint": "bun run lint:types && bun run lint:js && bun run lint:css && bun run check:css-vars && bun run check:css-classes"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4"
+  },
+  "dependencies": {
+    "@blinkdotnew/sdk": "2.3.9",
+    "@blinkdotnew/ui": "0.4.0",
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
+    "@tanstack/react-query": "^5.95.2",
+    "@tanstack/react-router": "^1.168.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "autoprefixer": "10.4.16",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "hono": "^4.12.10",
+    "lucide-react": "^1.0.1",
+    "postcss": "8.4.31",
+    "react-hot-toast": "^2.6.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "3.3.5",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.3.6"
+  }
+}

@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Lora:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+@import '@blinkdotnew/ui/styles';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), sans-serif;
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+:root {
+  --background: 36 43% 97%;
+  --foreground: 24 22% 18%;
+  --card: 36 33% 99%;
+  --card-foreground: 24 22% 18%;
+  --popover: 36 33% 99%;
+  --popover-foreground: 24 22% 18%;
+  --primary: 18 67% 48%;
+  --primary-foreground: 36 33% 98%;
+  --secondary: 35 54% 92%;
+  --secondary-foreground: 24 22% 24%;
+  --muted: 36 28% 93%;
+  --muted-foreground: 24 12% 44%;
+  --accent: 142 28% 41%;
+  --accent-foreground: 36 33% 98%;
+  --destructive: 0 72% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 28 26% 84%;
+  --input: 28 26% 84%;
+  --ring: 18 67% 48%;
+  --chart-1: 18 67% 48%;
+  --chart-2: 142 28% 41%;
+  --chart-3: 34 70% 58%;
+  --chart-4: 10 48% 40%;
+  --chart-5: 48 75% 50%;
+  --sidebar: 35 54% 92%;
+  --sidebar-foreground: 24 22% 18%;
+  --sidebar-primary: 18 67% 48%;
+  --sidebar-primary-foreground: 36 33% 98%;
+  --sidebar-accent: 142 28% 41%;
+  --sidebar-accent-foreground: 36 33% 98%;
+  --sidebar-border: 28 26% 84%;
+  --sidebar-ring: 18 67% 48%;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-heading: 'Lora', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+  --shadow-sm: 0 10px 24px -18px hsl(18 67% 28% / 0.3);
+  --shadow-md: 0 18px 40px -24px hsl(18 67% 28% / 0.28);
+  --shadow-lg: 0 26px 56px -28px hsl(18 67% 24% / 0.3);
+  --shadow-xl: 0 32px 72px -34px hsl(18 67% 22% / 0.36);
+  --shadow-card: 0 18px 36px -24px hsl(18 67% 24% / 0.22);
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --line-height-heading: 1.1;
+  --tracking-normal: 0em;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 450ms;
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root.dark,
+.theme-linear.dark,
+.theme-glass.dark,
+.theme-midnight.dark,
+.theme-minimal.dark {
+  --background: 24 18% 12%;
+  --foreground: 36 28% 92%;
+  --card: 24 18% 16%;
+  --card-foreground: 36 28% 92%;
+  --popover: 24 18% 16%;
+  --popover-foreground: 36 28% 92%;
+  --primary: 18 74% 62%;
+  --primary-foreground: 24 18% 12%;
+  --secondary: 24 15% 22%;
+  --secondary-foreground: 36 28% 92%;
+  --muted: 24 14% 20%;
+  --muted-foreground: 34 18% 70%;
+  --accent: 142 30% 52%;
+  --accent-foreground: 24 18% 12%;
+  --destructive: 0 72% 58%;
+  --destructive-foreground: 36 28% 92%;
+  --border: 24 12% 26%;
+  --input: 24 12% 26%;
+  --ring: 18 74% 62%;
+  --chart-1: 18 74% 62%;
+  --chart-2: 142 30% 52%;
+  --chart-3: 34 70% 58%;
+  --chart-4: 10 54% 60%;
+  --chart-5: 48 75% 56%;
+  --sidebar: 24 18% 16%;
+  --sidebar-foreground: 36 28% 92%;
+  --sidebar-primary: 18 74% 62%;
+  --sidebar-primary-foreground: 24 18% 12%;
+  --sidebar-accent: 142 30% 52%;
+  --sidebar-accent-foreground: 24 18% 12%;
+  --sidebar-border: 24 12% 26%;
+  --sidebar-ring: 18 74% 62%;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .surface-glow {
+    box-shadow: var(--shadow-card);
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes fade-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-overlay-in {
+  animation: fade-overlay-in 0.2s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
