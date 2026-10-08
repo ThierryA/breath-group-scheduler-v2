@@ -18,9 +18,11 @@ import { addAttendee } from '@/features/availability/attendees-api'
 import toast from 'react-hot-toast'
 import { AddToCalendarButton } from './AddToCalendarButton'
 import {
+  entriesOverlapInTimezone,
   entryDisplayDate,
   entryDisplayTimes,
   formatTime12h,
+  todayInTimezone,
 } from '@/features/availability/utils/calendarHelpers'
 import { cn } from '@/lib/utils'
 import { beautifyName } from '@/features/availability/utils/nameHelpers'
@@ -50,28 +52,11 @@ interface TimelineScheduleProps {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function todayInTimezone(timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date())
-  const year = parts.find((p) => p.type === 'year')?.value
-  const month = parts.find((p) => p.type === 'month')?.value
-  const day = parts.find((p) => p.type === 'day')?.value
-  return `${year}-${month}-${day}`
-}
-
 function tzAbbreviation(tz: string): string {
   try {
     const f = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).format(new Date())
     return f.split(' ').pop() ?? tz
   } catch { return tz }
-}
-
-function timesOverlap(aS: string, aE: string, bS: string, bE: string) {
-  return aS < bE && bS < aE
 }
 
 /* ------------------------------------------------------------------ */
@@ -259,11 +244,9 @@ function SessionCard({
 
   const linkedSitter = useMemo(() => {
     if (!isBreather) return null
-    const breatherDate = entryDisplayDate(entry, displayTimezone)
     return allEntries.find((sitter) => {
       if (sitter.role !== 'sitter') return false
-      if (entryDisplayDate(sitter, displayTimezone) !== breatherDate) return false
-      if (!timesOverlap(entry.startTime, entry.endTime, sitter.startTime, sitter.endTime)) return false
+      if (!entriesOverlapInTimezone(entry, sitter, displayTimezone)) return false
       return allAttendees.some(
         (a) => a.entryId === sitter.id && a.email.toLowerCase() === (entry.email ?? '').toLowerCase()
       )
@@ -400,6 +383,7 @@ function SessionCard({
                 {sitterOptions.map((s) => {
                   const sCount = attendeeCounts[s.id] ?? 0
                   const sFull = s.maxAttendees !== null && sCount >= (s.maxAttendees ?? 0)
+                  const sitterTimes = entryDisplayTimes(s, displayTimezone)
                   return (
                     <button
                       key={s.id}
@@ -409,7 +393,7 @@ function SessionCard({
                     >
                       <div className="min-w-0">
                         <span className="block truncate text-xs font-medium text-foreground">{beautifyName(s.name)}</span>
-                        <span className="text-[11px] text-muted-foreground">{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</span>
+                        <span className="text-[11px] text-muted-foreground">{formatTime12h(sitterTimes.startTime)} – {formatTime12h(sitterTimes.endTime)}</span>
                       </div>
                       <div className="shrink-0">
                         {sFull ? (
@@ -618,10 +602,9 @@ export function TimelineSchedule({
                 const isBreather = entry.role === 'breather'
                 const itemDotColor = isBreather ? 'bg-primary' : 'bg-accent'
                 const sitterOptions = isBreather
-                  ? (sittersByDate[group.dateKey] ?? []).filter((s) => {
-                      const st = entryDisplayTimes(s, displayTimezone)
-                      return times.startTime < st.endTime && st.startTime < times.endTime
-                    })
+                  ? (sittersByDate[group.dateKey] ?? []).filter((s) =>
+                      entriesOverlapInTimezone(entry, s, displayTimezone)
+                    )
                   : []
                 const showSitterSessions = isBreather
 

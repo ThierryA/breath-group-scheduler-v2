@@ -15,8 +15,14 @@ import {
   type AvailabilityInput,
 } from '@/features/availability/api'
 import { listAllAttendees } from '@/features/availability/attendees-api'
-import { entryDisplayDate, entryDisplayTimes } from '@/features/availability/utils/calendarHelpers'
-import { CalendarToolbar, type RoleFilter } from '@/features/availability/components/CalendarToolbar'
+import {
+  entriesOverlapInTimezone,
+  entryDisplayDate,
+  entryDisplayRange,
+  entryDisplayTimes,
+  todayInTimezone,
+} from '@/features/availability/utils/calendarHelpers'
+import { CalendarToolbar, type MineFilter, type RoleFilter } from '@/features/availability/components/CalendarToolbar'
 import { MiniCalendar } from '@/features/availability/components/MiniCalendar'
 import { TimelineSchedule } from '@/features/availability/components/TimelineSchedule'
 import { EventFormPanel } from '@/features/availability/components/EventFormPanel'
@@ -67,7 +73,7 @@ export function HomePage({ user, member, isAdmin, onNavigateAdmin, onNavigateDoc
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
-  const [mineFilter, setMineFilter] = useState<'all' | 'created' | 'attending'>('all')
+  const [mineFilter, setMineFilter] = useState<MineFilter>('all')
 
   // My Matches modal
   const [matchesOpen, setMatchesOpen] = useState(false)
@@ -125,7 +131,7 @@ export function HomePage({ user, member, isAdmin, onNavigateAdmin, onNavigateDoc
   // --- My Matches computation ---
   const myMatches = useMemo(() => {
     if (!user) return { sitterMatches: [] as MatchSitter[], breatherMatches: [] as MatchBreather[], total: 0 }
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayInTimezone(displayTz)
     const myEmail = user.email.toLowerCase().trim()
 
     // Per-sitter attendee emails & counts
@@ -138,50 +144,40 @@ export function HomePage({ user, member, isAdmin, onNavigateAdmin, onNavigateDoc
       if (a.email) attendeeEmailsBySitter[eid].add(a.email.toLowerCase().trim())
     }
 
-    // My future breather sessions
+    // Use the viewer's calendar date so sessions near midnight are handled consistently.
     const myBreathers = entries.filter(
-      (e) => e.role === 'breather' && (e.email ?? '').toLowerCase().trim() === myEmail && e.date >= today
+      (e) => e.role === 'breather' && (e.email ?? '').toLowerCase().trim() === myEmail && entryDisplayDate(e, displayTz) >= today
     )
-    // My future sitter sessions
     const mySitters = entries.filter(
-      (e) => e.role === 'sitter' && (e.userId === user.id || (e.email ?? '').toLowerCase().trim() === myEmail) && e.date >= today
+      (e) => e.role === 'sitter' && (e.userId === user.id || (e.email ?? '').toLowerCase().trim() === myEmail) && entryDisplayDate(e, displayTz) >= today
     )
 
-    // All other sitters (not mine) that are still open
     const otherSitters = entries.filter((e) => {
-      if (e.role !== 'sitter') return false
-      if (e.date < today) return false
-      if (e.userId === user.id) return false
-      if ((e.email ?? '').toLowerCase().trim() === myEmail) return false
+      if (e.role !== 'sitter' || entryDisplayDate(e, displayTz) < today) return false
+      if (e.userId === user.id || (e.email ?? '').toLowerCase().trim() === myEmail) return false
       const max = e.maxAttendees != null ? Number(e.maxAttendees) : null
-      if (max !== null && max > 0 && (attendeeCountBySitter[e.id] ?? 0) >= max) return false
-      return true
+      return max === null || max <= 0 || (attendeeCountBySitter[e.id] ?? 0) < max
     })
 
-    // All other breathers (not mine)
-    const otherBreathers = entries.filter((e) => {
-      if (e.role !== 'breather') return false
-      if (e.date < today) return false
-      if ((e.email ?? '').toLowerCase().trim() === myEmail) return false
-      return true
-    })
+    const otherBreathers = entries.filter((e) =>
+      e.role === 'breather' && entryDisplayDate(e, displayTz) >= today &&
+      (e.email ?? '').toLowerCase().trim() !== myEmail
+    )
 
     const sitterMatches: MatchSitter[] = []
     for (const myB of myBreathers) {
-      const bTimes = entryDisplayTimes(myB, displayTz)
-      for (const s of otherSitters) {
-        if (s.date !== myB.date) continue
-        const sTimes = entryDisplayTimes(s, displayTz)
-        if (bTimes.startTime >= sTimes.endTime || sTimes.startTime >= bTimes.endTime) continue
-        const alreadyJoined = attendeeEmailsBySitter[s.id]?.has(myEmail) ?? false
+      for (const sitter of otherSitters) {
+        if (!entriesOverlapInTimezone(myB, sitter, displayTz)) continue
+        const sitterRange = entryDisplayRange(sitter, displayTz)
+        const alreadyJoined = attendeeEmailsBySitter[sitter.id]?.has(myEmail) ?? false
         sitterMatches.push({
-          sitterId: s.id,
-          sitterName: s.name,
-          sitterDate: s.date,
-          sitterStart: sTimes.startTime,
-          sitterEnd: sTimes.endTime,
-          sitterMax: s.maxAttendees != null ? Number(s.maxAttendees) : null,
-          sitterCount: attendeeCountBySitter[s.id] ?? 0,
+          sitterId: sitter.id,
+          sitterName: sitter.name,
+          sitterDate: sitterRange.startDate,
+          sitterStart: sitterRange.startTime,
+          sitterEnd: sitterRange.endTime,
+          sitterMax: sitter.maxAttendees != null ? Number(sitter.maxAttendees) : null,
+          sitterCount: attendeeCountBySitter[sitter.id] ?? 0,
           alreadyJoined,
           breatherId: myB.id,
           breatherName: myB.name,
@@ -190,28 +186,25 @@ export function HomePage({ user, member, isAdmin, onNavigateAdmin, onNavigateDoc
     }
 
     const breatherMatches: MatchBreather[] = []
-    for (const myS of mySitters) {
-      const sTimes = entryDisplayTimes(myS, displayTz)
-      for (const b of otherBreathers) {
-        if (b.date !== myS.date) continue
-        const bTimes = entryDisplayTimes(b, displayTz)
-        if (sTimes.startTime >= bTimes.endTime || bTimes.startTime >= sTimes.endTime) continue
-        // Skip if this breather already joined another sitter session
-        const alreadyHasSitter = entries.some((s2) => {
-          if (s2.role !== 'sitter' || s2.date !== b.date) return false
-          const s2T = entryDisplayTimes(s2, displayTz)
-          if (bTimes.startTime >= s2T.endTime || s2T.startTime >= bTimes.endTime) return false
-          return attendeeEmailsBySitter[s2.id]?.has((b.email ?? '').toLowerCase().trim()) ?? false
-        })
+    for (const mySitter of mySitters) {
+      for (const breather of otherBreathers) {
+        if (!entriesOverlapInTimezone(mySitter, breather, displayTz)) continue
+        const breatherRange = entryDisplayRange(breather, displayTz)
+        const breatherEmail = (breather.email ?? '').toLowerCase().trim()
+        const alreadyHasSitter = entries.some((sitter) =>
+          sitter.role === 'sitter' &&
+          entriesOverlapInTimezone(sitter, breather, displayTz) &&
+          (attendeeEmailsBySitter[sitter.id]?.has(breatherEmail) ?? false)
+        )
         if (alreadyHasSitter) continue
         breatherMatches.push({
-          breatherId: b.id,
-          breatherName: b.name,
-          breatherDate: b.date,
-          breatherStart: bTimes.startTime,
-          breatherEnd: bTimes.endTime,
-          sitterId: myS.id,
-          sitterName: myS.name,
+          breatherId: breather.id,
+          breatherName: breather.name,
+          breatherDate: breatherRange.startDate,
+          breatherStart: breatherRange.startTime,
+          breatherEnd: breatherRange.endTime,
+          sitterId: mySitter.id,
+          sitterName: mySitter.name,
         })
       }
     }
