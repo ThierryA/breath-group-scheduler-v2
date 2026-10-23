@@ -8,6 +8,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // Ensure app code and UI libraries all use the same React dispatcher.
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     port: 3000,
